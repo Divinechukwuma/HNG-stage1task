@@ -27,26 +27,43 @@ $client_ip = get_client_ip();
 $location_api_url = "http://ip-api.com/json/{$client_ip}";
 $location_data = file_get_contents($location_api_url);
 
-if ($location_data === FALSE) {
-    $city = 'Unknown';
-    $error = 'Failed to retrieve location data';
-} else {
+$city = 'Unknown';
+$error = null;
+$temperature = 'Unknown';
+
+if ($location_data !== FALSE) {
     $loc_o = json_decode($location_data, true);
     if ($loc_o && $loc_o['status'] == 'success') {
         $city = $loc_o['city'];
-        $error = null;
+        
+        // Get temperature data using OpenWeatherMap API
+        $api_key = '2f4692d4ab9f509fdde0fac002984034'; // Replace with your OpenWeatherMap API key
+        $weather_api_url = "http://api.openweathermap.org/data/2.5/weather?q={$city}&units=metric&appid={$api_key}";
+        $weather_data = file_get_contents($weather_api_url);
+
+        if ($weather_data !== FALSE) {
+            $weather_o = json_decode($weather_data, true);
+            if ($weather_o && $weather_o['cod'] == 200) {
+                $temperature = $weather_o['main']['temp'];
+            } else {
+                $error = isset($weather_o['message']) ? $weather_o['message'] : 'Failed to retrieve temperature data';
+            }
+        } else {
+            $error = 'Failed to retrieve weather data';
+        }
     } else {
-        $city = 'Unknown';
-        $error = isset($loc_o['message']) ? $loc_o['message'] : 'Unknown error';
+        $error = isset($loc_o['message']) ? $loc_o['message'] : 'Failed to retrieve location data';
     }
+} else {
+    $error = 'Failed to retrieve location data';
 }
 
 $response = [
     "client_ip" => $client_ip,
     "location" => $city,
-    "greeting" => "Hello, {$visitor_name}!",
+    "greeting" => "Hello, {$visitor_name}!, the temperature is {$temperature} degrees Celsius in {$city}",
     "error" => $error
 ];
 
 echo json_encode($response);
-
+?>

@@ -1,0 +1,7 @@
+RewriteEngine On
+RewriteBase /api/
+
+# Redirect requests to 'hello' to 'hello.php'
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^hello$ hello.php [L,QSA]
